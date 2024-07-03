@@ -29,7 +29,7 @@ func main() {
 	}
 	requestBuffer := make([]byte, 1024)
 	_, err = conn.Read(requestBuffer)
-	if !strings.HasPrefix(string(requestBuffer), "GET HTTP/1.1") {
+	if !strings.HasPrefix(string(requestBuffer), "GET / HTTP/1.1") {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
