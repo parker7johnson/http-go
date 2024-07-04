@@ -50,7 +50,7 @@ func handleConnection(conn net.Conn) {
 	path := strings.Split(opts[0], " ")
 
 	pathParts := strings.Split(path[1], "/")
-	for i, v := range pathParts {
+	for i, v := range opts {
 		println(i, v)
 	}
 	if path[1] == "/" {
@@ -58,6 +58,9 @@ func handleConnection(conn net.Conn) {
 	} else if pathParts[1] == "echo" {
 		message := pathParts[2]
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
+	} else if pathParts[1] == "user-agent" {
+		userAgent := strings.Split(opts[2], " ")
+		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContentLength: %d\r\n\r\n%s", len(pathParts[1]), userAgent[1])))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
