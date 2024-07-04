@@ -54,7 +54,7 @@ func handleConnection(conn net.Conn) {
 		println(i, v)
 	}
 	if path[1] == "/" {
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n"))
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if pathParts[1] == "echo" {
 		message := pathParts[2]
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
