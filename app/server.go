@@ -79,7 +79,7 @@ func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 	} else if strings.Split(request.Path, "/")[1] == "echo" {
 
 		message := strings.Split(request.Path, "/")[2]
-		if request.Headers["Accept-Encoding"] == "gzip" {
+		if strings.Contains(request.Headers["Accept-Encoding"], "gzip") {
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", request.Headers["Accept-Encoding"])))
 		} else {
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
