@@ -79,9 +79,19 @@ func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 	} else if strings.Split(request.Path, "/")[1] == "echo" {
 
 		message := strings.Split(request.Path, "/")[2]
-		if strings.Contains(request.Headers["Accept-Encoding"], "gzip") {
-			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", request.Headers["Accept-Encoding"])))
+		headersSlice := strings.Split(request.Headers["Accept-Encoding"], ", ")
+		for i, v := range headersSlice {
+			// v = strings.Trim(v, ",")
+			println(i, v)
+		}
+		println("valid encoding index out at ")
+		println(find(headersSlice, "gzip"))
+		if find(headersSlice, "gzip") != -1 {
+			print("entered writing content encoding header")
+			encodingIndex := find(headersSlice, "gzip")
+			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", headersSlice[encodingIndex])))
 		} else {
+			print("did not write content encoding header")
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
 
 		}
@@ -131,11 +141,26 @@ func createRequest(buffer string) (*HTTPRequest, error) {
 			continue
 		}
 
-		splitHeader := strings.Split(splitRequest[i], " ")
-		headers[strings.TrimSuffix(splitHeader[0], ":")] = splitHeader[1]
+		if strings.Contains(splitRequest[i], "Accept-Encoding") {
+			header := strings.Split(splitRequest[i], ":")
+			headers[header[0]] = header[1]
+		} else {
+			splitHeader := strings.Split(splitRequest[i], " ")
+			headers[strings.TrimSuffix(splitHeader[0], ":")] = splitHeader[1]
+		}
 
 	}
 	request.Headers = headers
 
 	return request, nil
+}
+
+func find(slice []string, value string) int {
+	for i := range slice {
+
+		if strings.Contains(slice[i], value) {
+			return i
+		}
+	}
+	return -1
 }
