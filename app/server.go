@@ -15,8 +15,6 @@ type HTTPRequest struct {
 	Body    string
 }
 
-var statusCodes = make(map[string]string)
-
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
@@ -67,6 +65,15 @@ func handleConnection(conn net.Conn) {
 	} else if strings.Split(request.Path, "/")[1] == "user-agent" {
 
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(request.Headers["User-Agent"]), request.Headers["User-Agent"])))
+	} else if strings.Contains(request.Path, "file") {
+		fileDir := os.Args[2]
+		bytes, err := os.ReadFile(fmt.Sprintf("%s%s", fileDir, strings.Split(request.Path, "/")[2]))
+		if err == nil {
+			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(bytes), string(bytes))))
+		} else {
+			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		}
+
 	} else {
 
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
@@ -92,21 +99,4 @@ func createRequest(buffer string) (*HTTPRequest, error) {
 	request.Headers = headers
 
 	return request, nil
-}
-
-func (*HTTPRequest) createResponse(status string, headers map[string]string, body string) string {
-	res := ""
-	if headers == nil {
-		res = fmt.Sprintf("HTTP/1.1 %s %s\r\n\r\n", status, statusCodes[status])
-	} else {
-		res = fmt.Sprintf("HTTP/1.1 %s %s\r\n")
-		for k, v := range headers {
-			res += fmt.Sprintf("%s: %s\r\n", k, v)
-		}
-		if body != "" {
-
-		}
-
-	}
-	return res
 }
