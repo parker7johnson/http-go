@@ -50,7 +50,7 @@ func handleConnection(conn net.Conn) {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-
+	print(string(buffer))
 	request, _ := createRequest(string(buffer))
 	log.Println()
 	log.Println(request)
@@ -64,11 +64,11 @@ func handleConnection(conn net.Conn) {
 }
 
 func handlePOSTRequest(request *HTTPRequest, conn net.Conn) {
-	if strings.Contains(request.Path, "/file/") {
-		err := writeFile(*request)
-		if err == nil {
-			conn.Write([]byte("HTTP/1.1 201 Created\r\n\r\n"))
-		}
+	if strings.Contains(request.Path, "/files/") {
+		writeFile(*request)
+
+		conn.Write([]byte("HTTP/1.1 201 Created\r\n\r\n"))
+
 	}
 }
 
@@ -83,9 +83,9 @@ func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 	} else if strings.Split(request.Path, "/")[1] == "user-agent" {
 
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(request.Headers["User-Agent"]), request.Headers["User-Agent"])))
-	} else if strings.Contains(request.Path, "file") {
+	} else if strings.Contains(request.Path, "/files/") {
 		bytes, err := readFile(request)
-		if err == nil {
+		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 		} else {
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(bytes), string(bytes))))
@@ -109,11 +109,13 @@ func writeFile(request HTTPRequest) error {
 		os.Mkdir(fileDir, 0755)
 	}
 	outFile := fmt.Sprintf("%s%s", fileDir, strings.Split(request.Path, "/")[2])
+	println(outFile)
 	return os.WriteFile(outFile, []byte(request.Body), 0666)
 }
 
 func createRequest(buffer string) (*HTTPRequest, error) {
 	splitRequest := strings.Split(buffer, "\r\n")
+	splitRequest[len(splitRequest)-1] = strings.Trim(splitRequest[len(splitRequest)-1], "\x00")
 	request := &HTTPRequest{}
 	request.Method = strings.Split(splitRequest[0], " ")[0]
 	request.Path = strings.Split(splitRequest[0], " ")[1]
