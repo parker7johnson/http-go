@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"log"
 	"net"
@@ -88,8 +91,10 @@ func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 		println(find(headersSlice, "gzip"))
 		if find(headersSlice, "gzip") != -1 {
 			print("entered writing content encoding header")
-			encodingIndex := find(headersSlice, "gzip")
-			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", headersSlice[encodingIndex])))
+			var bodyBytes bytes.Buffer
+			bodyWriter := gzip.NewWriter(&bodyBytes)
+			bodyWriter.Write([]byte(request.Body))
+			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n%s", "gzip", len(bodyBytes.Bytes()), bodyBytes.Bytes())))
 		} else {
 			print("did not write content encoding header")
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
