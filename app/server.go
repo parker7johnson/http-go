@@ -82,18 +82,14 @@ func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 
 		message := strings.Split(request.Path, "/")[2]
 		headersSlice := strings.Split(request.Headers["Accept-Encoding"], ", ")
-		for i, v := range headersSlice {
-			// v = strings.Trim(v, ",")
-			println(i, v)
-		}
-		println("valid encoding index out at ")
-		println(find(headersSlice, "gzip"))
 		if find(headersSlice, "gzip") != -1 {
 			print("entered writing content encoding header")
-			var bodyBytes bytes.Buffer
-			bodyWriter := gzip.NewWriter(&bodyBytes)
-			bodyWriter.Write([]byte(request.Body))
-			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n%s", "gzip", len(bodyBytes.Bytes()), bodyBytes.Bytes())))
+			var buff bytes.Buffer
+			bodyWriter := gzip.NewWriter(&buff)
+			bodyWriter.Write([]byte(message))
+			bodyWriter.Close()
+
+			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n%s", "gzip", len(buff.String()), buff.String())))
 		} else {
 			print("did not write content encoding header")
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
