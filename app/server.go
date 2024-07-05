@@ -79,7 +79,6 @@ func createRequest(buffer string) (*HTTPRequest, error) {
 	request.Method = strings.Split(splitRequest[0], " ")[0]
 	request.Path = strings.Split(splitRequest[0], " ")[1]
 	request.Body = splitRequest[len(splitRequest)-1]
-	log.Printf("-----------Request Body---------\n%s", request.Body)
 	headers := make(map[string]string)
 	for i := 0; i < len(splitRequest); i++ {
 		if !strings.Contains(splitRequest[i], ":") {
@@ -107,9 +106,10 @@ func (*HTTPRequest) createResponse(req HTTPRequest, status string) string {
 		}
 		if strings.Contains(req.Path, "user-agent") {
 			res += req.Headers["User-Agent"]
-		} else {
+		} else if req.Body != "null" || req.Body != "" {
 			res += req.Body
 		}
+
 		log.Default().Println(res)
 
 	}
