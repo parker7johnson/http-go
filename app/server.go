@@ -55,6 +55,23 @@ func handleConnection(conn net.Conn) {
 	request, _ := createRequest(string(buffer))
 
 	log.Println(request)
+	if request.Method == "POST" {
+		handleGETRequest(request, conn)
+	} else if request.Method == "GET" {
+		handlePOSTRequest(request, conn)
+	}
+}
+
+func handlePOSTRequest(request *HTTPRequest, conn net.Conn) {
+	if strings.Contains(request.Path, "/file/") {
+		err := writeFile(*request)
+		if err == nil {
+			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 201 Created\r\n\r\n")))
+		}
+	}
+}
+
+func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 	if request.Path == "/" {
 
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
@@ -66,7 +83,7 @@ func handleConnection(conn net.Conn) {
 
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(request.Headers["User-Agent"]), request.Headers["User-Agent"])))
 	} else if strings.Contains(request.Path, "file") {
-		bytes, err := readFile(*request)
+		bytes, err := readFile(request)
 		if err == nil {
 			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(bytes), string(bytes))))
 		} else {
@@ -79,9 +96,19 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func readFile(request HTTPRequest) ([]byte, error) {
+func readFile(request *HTTPRequest) ([]byte, error) {
 	fileDir := os.Args[2]
 	return os.ReadFile(fmt.Sprintf("%s%s", fileDir, strings.Split(request.Path, "/")[2]))
+}
+
+func writeFile(request HTTPRequest) error {
+	fileDir := os.Args[2]
+	_, err := os.Stat(fileDir)
+	if os.IsNotExist(err) {
+		os.Mkdir(fileDir, 0755)
+	}
+	outFile := fmt.Sprintf("%s%s", fileDir, strings.Split(request.Path, "/")[2])
+	return os.WriteFile(outFile, []byte(request.Body), 0666)
 }
 
 func createRequest(buffer string) (*HTTPRequest, error) {
