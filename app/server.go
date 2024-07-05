@@ -18,7 +18,6 @@ type HTTPRequest struct {
 var statusCodes = make(map[string]string)
 
 func main() {
-	statusCodes = initMap()
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
@@ -56,20 +55,21 @@ func handleConnection(conn net.Conn) {
 	}
 
 	request, _ := createRequest(string(buffer))
-	res := ""
+
 	log.Println(request)
 	if request.Path == "/" {
-		res = request.createResponse(*request, "200")
-		conn.Write([]byte(res))
+
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if strings.Split(request.Path, "/")[1] == "echo" {
-		res = request.createResponse(*request, "200")
-		conn.Write([]byte(res))
+
+		message := strings.Split(request.Path, "/")[2]
+		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(message), message)))
 	} else if strings.Split(request.Path, "/")[1] == "user-agent" {
-		res = request.createResponse(*request, "200")
-		conn.Write([]byte(res))
+
+		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(request.Headers["User-Agent"]), request.Headers["User-Agent"])))
 	} else {
-		res = request.createResponse(*request, "404")
-		conn.Write([]byte(res))
+
+		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
 }
 
@@ -94,93 +94,19 @@ func createRequest(buffer string) (*HTTPRequest, error) {
 	return request, nil
 }
 
-func (*HTTPRequest) createResponse(req HTTPRequest, status string) string {
+func (*HTTPRequest) createResponse(status string, headers map[string]string, body string) string {
 	res := ""
-	headers := req.Headers
 	if headers == nil {
 		res = fmt.Sprintf("HTTP/1.1 %s %s\r\n\r\n", status, statusCodes[status])
 	} else {
-		res = fmt.Sprintf("HTTP/1.1 %s %s\r\n", status, statusCodes[status])
+		res = fmt.Sprintf("HTTP/1.1 %s %s\r\n")
 		for k, v := range headers {
 			res += fmt.Sprintf("%s: %s\r\n", k, v)
 		}
-		if strings.Contains(req.Path, "user-agent") {
-			res += req.Headers["User-Agent"]
-		} else if req.Body != "null" || req.Body != "" {
-			res += req.Body
-		}
+		if body != "" {
 
-		log.Default().Println(res)
+		}
 
 	}
 	return res
-}
-
-func initMap() map[string]string {
-	statusCodes := map[string]string{
-		"100": "Continue",
-		"101": "Switching Protocols",
-		"102": "Processing",
-		"103": "Early Hints",
-		"200": "OK",
-		"201": "Created",
-		"202": "Accepted",
-		"203": "Non-Authoritative Information",
-		"204": "No Content",
-		"205": "Reset Content",
-		"206": "Partial Content",
-		"207": "Multi-Status",
-		"208": "Already Reported",
-		"226": "IM Used",
-		"300": "Multiple Choices",
-		"301": "Moved Permanently",
-		"302": "Found",
-		"303": "See Other",
-		"304": "Not Modified",
-		"305": "Use Proxy",
-		"307": "Temporary Redirect",
-		"308": "Permanent Redirect",
-		"400": "Bad Request",
-		"401": "Unauthorized",
-		"402": "Payment Required",
-		"403": "Forbidden",
-		"404": "Not Found",
-		"405": "Method Not Allowed",
-		"406": "Not Acceptable",
-		"407": "Proxy Authentication Required",
-		"408": "Request Timeout",
-		"409": "Conflict",
-		"410": "Gone",
-		"411": "Length Required",
-		"412": "Precondition Failed",
-		"413": "Payload Too Large",
-		"414": "URI Too Long",
-		"415": "Unsupported Media Type",
-		"416": "Range Not Satisfiable",
-		"417": "Expectation Failed",
-		"418": "I'm a teapot",
-		"421": "Misdirected Request",
-		"422": "Unprocessable Entity",
-		"423": "Locked",
-		"424": "Failed Dependency",
-		"425": "Too Early",
-		"426": "Upgrade Required",
-		"428": "Precondition Required",
-		"429": "Too Many Requests",
-		"431": "Request Header Fields Too Large",
-		"451": "Unavailable For Legal Reasons",
-		"500": "Internal Server Error",
-		"501": "Not Implemented",
-		"502": "Bad Gateway",
-		"503": "Service Unavailable",
-		"504": "Gateway Timeout",
-		"505": "HTTP Version Not Supported",
-		"506": "Variant Also Negotiates",
-		"507": "Insufficient Storage",
-		"508": "Loop Detected",
-		"510": "Not Extended",
-		"511": "Network Authentication Required",
-	}
-
-	return statusCodes
 }
