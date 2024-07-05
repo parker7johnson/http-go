@@ -41,7 +41,6 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
 
 	buffer := make([]byte, 1024)
 
@@ -53,20 +52,22 @@ func handleConnection(conn net.Conn) {
 	}
 
 	request, _ := createRequest(string(buffer))
-
+	log.Println()
 	log.Println(request)
-	if request.Method == "POST" {
+	if request.Method == "GET" {
 		handleGETRequest(request, conn)
-	} else if request.Method == "GET" {
+	} else if request.Method == "POST" {
 		handlePOSTRequest(request, conn)
 	}
+
+	conn.Close()
 }
 
 func handlePOSTRequest(request *HTTPRequest, conn net.Conn) {
 	if strings.Contains(request.Path, "/file/") {
 		err := writeFile(*request)
 		if err == nil {
-			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 201 Created\r\n\r\n")))
+			conn.Write([]byte("HTTP/1.1 201 Created\r\n\r\n"))
 		}
 	}
 }
@@ -85,9 +86,9 @@ func handleGETRequest(request *HTTPRequest, conn net.Conn) {
 	} else if strings.Contains(request.Path, "file") {
 		bytes, err := readFile(request)
 		if err == nil {
-			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(bytes), string(bytes))))
-		} else {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		} else {
+			conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(bytes), string(bytes))))
 		}
 
 	} else {
